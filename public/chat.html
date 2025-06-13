@@ -135,42 +135,56 @@
     }
 
     async function sendMessage() {
-      const question = input.value.trim();
-      if (!question) return;
+  const question = input.value.trim();
+  if (!question) return;
 
-      addMessage(question, 'user');
-      input.value = '';
-      input.focus();
+  addMessage(question, 'user');
+  input.value = '';
 
-      const loadingDiv = addMessage('AI is typing...', 'bot');
-      loadingDiv.classList.add('typing');
+  const loadingDiv = addMessage('AI is typing...', 'bot');
+  loadingDiv.classList.add('typing');
 
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: question })
-        });
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: question })
+    });
 
-        const data = await res.json();
-        loadingDiv.remove();
-
-        const content = data.content || "❌ Sorry, no response";
-        let botReply = content;
-
-        if (data.url) {
-        const link = `<a class="source-link" href="${data.url}" target="_blank">📄 View Source</a>`;
-        botReply += link;
-        }
-
-
-        addMessage(botReply, 'bot');
-      } catch (err) {
-        loadingDiv.remove();
-        addMessage("❌ Network error", 'bot');
-        console.error(err);
-      }
+    if (!res.ok) {
+      const errorText = await res.text();
+      loadingDiv.remove();
+      addMessage(`❌ Error ${res.status}: ${errorText}`, 'bot');
+      return;
     }
+
+    const contentType = res.headers.get("Content-Type") || "";
+    if (!contentType.includes("application/json")) {
+      const errorText = await res.text();
+      loadingDiv.remove();
+      addMessage(`❌ Unexpected response:\n${errorText}`, 'bot');
+      return;
+    }
+
+    const data = await res.json();
+    loadingDiv.remove();
+
+    const reply = data.content || "❌ Sorry, no response";
+    let botReply = reply;
+
+    if (data.url) {
+      const link = `<a class="source-link" href="${data.url}" target="_blank">📄 View Source</a>`;
+      botReply += link;
+    }
+
+    addMessage(botReply, 'bot');
+  } catch (err) {
+    loadingDiv.remove();
+    addMessage("❌ Network error", 'bot');
+    console.error(err);
+  }
+}
+
 
     sendButton.addEventListener('click', sendMessage);
     input.addEventListener('keydown', function (e) {
