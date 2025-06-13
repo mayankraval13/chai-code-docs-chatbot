@@ -1,9 +1,8 @@
 from fastapi import FastAPI, Request
-from rag_core import get_answer
 from fastapi.middleware.cors import CORSMiddleware
+from rag_core import get_answer
 
 app = FastAPI()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -11,11 +10,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/api/chat")
+@app.post("/chat")
 async def chat(request: Request):
     data = await request.json()
-    query = data.get("query", "")
-    return get_answer(query)
+    return get_answer(data.get("query", ""))
 
-# ✅ Vercel needs this for ASGI support
 handler = app
